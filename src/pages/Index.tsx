@@ -31,14 +31,12 @@ const Index = () => {
       const canvas = await html2canvas(resumeRef.current, {
         scale: 2,
         useCORS: true,
-        backgroundColor: "#ffffff",
+        backgroundColor: "#f5f1e8",
       });
 
       const imgData = canvas.toDataURL("image/png");
-      
-      // Use landscape orientation for wider layout
       const pdf = new jsPDF({
-        orientation: "landscape",
+        orientation: "portrait",
         unit: "mm",
         format: "a4",
       });
@@ -49,7 +47,7 @@ const Index = () => {
       const imgHeight = canvas.height;
       const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
       const imgX = (pdfWidth - imgWidth * ratio) / 2;
-      const imgY = (pdfHeight - imgHeight * ratio) / 2;
+      const imgY = 0;
 
       pdf.addImage(
         imgData,
