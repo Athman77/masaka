@@ -1,117 +1,75 @@
-import { useState, useRef } from "react";
-import ResumeForm, { ResumeData } from "@/components/ResumeForm";
-import ResumePreview from "@/components/ResumePreview";
-import { Button } from "@/components/ui/button";
-import { Download } from "lucide-react";
-import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
+import { useState } from "react";
+import { ContractForm, ContractData } from "@/components/ContractForm";
+import { generatePDF } from "@/components/ContractPDF";
 import { toast } from "sonner";
+import { FileText } from "lucide-react";
+import masakaLogo from "@/assets/masaka-logo.jpg";
 
 const Index = () => {
-  const [resumeData, setResumeData] = useState<ResumeData>({
-    name: "",
-    position: "",
-    dateOfBirth: "",
-    education: "",
-    languages: "",
-    phone: "",
-    email: "",
-    skills: "",
-    photo: "",
-  });
+  const [isGenerating, setIsGenerating] = useState(false);
 
-  const resumeRef = useRef<HTMLDivElement>(null);
-
-  const handleDownloadPDF = async () => {
-    if (!resumeRef.current) return;
-
+  const handleGeneratePDF = async (data: ContractData) => {
+    setIsGenerating(true);
     try {
-      toast.loading("Generating PDF...");
-      
-      const canvas = await html2canvas(resumeRef.current, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: "#f5f1e8",
-      });
-
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF({
-        orientation: "portrait",
-        unit: "mm",
-        format: "a4",
-      });
-
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
-      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-      const imgX = (pdfWidth - imgWidth * ratio) / 2;
-      const imgY = 0;
-
-      pdf.addImage(
-        imgData,
-        "PNG",
-        imgX,
-        imgY,
-        imgWidth * ratio,
-        imgHeight * ratio
-      );
-
-      const fileName = resumeData.name
-        ? `${resumeData.name.replace(/\s+/g, "_")}_Football_Resume.pdf`
-        : "Footballer_Resume.pdf";
-
-      pdf.save(fileName);
-      toast.dismiss();
-      toast.success("PDF downloaded successfully!");
+      const blob = await generatePDF(data);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${data.playerName.replace(/\s+/g, "_")}_Contract.pdf`;
+      link.click();
+      URL.revokeObjectURL(url);
+      toast.success("PDF generated successfully!");
     } catch (error) {
-      toast.dismiss();
-      toast.error("Failed to generate PDF. Please try again.");
       console.error("Error generating PDF:", error);
+      toast.error("Failed to generate PDF. Please try again.");
+    } finally {
+      setIsGenerating(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto py-8 px-4">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-5xl font-bold text-foreground mb-3 tracking-tight">
-            Footballer Resume Generator
-          </h1>
-          <p className="text-lg text-muted-foreground">
-            Create a professional contract resume for football players
-          </p>
-        </div>
-
-        {/* Main Content */}
-        <div className="grid lg:grid-cols-2 gap-8 items-start">
-          {/* Form Section */}
-          <div className="space-y-6">
-            <ResumeForm onDataChange={setResumeData} />
-            <Button
-              onClick={handleDownloadPDF}
-              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-              size="lg"
-            >
-              <Download className="mr-2 h-5 w-5" />
-              Download as PDF
-            </Button>
+    <div className="min-h-screen bg-gradient-to-br from-secondary via-background to-muted relative">
+      <div 
+        className="absolute inset-0 opacity-10 bg-center bg-no-repeat"
+        style={{ 
+          backgroundImage: `url(${masakaLogo})`,
+          backgroundSize: '400px',
+          backgroundPosition: 'center'
+        }}
+      />
+      <div className="container mx-auto px-4 py-8 max-w-4xl relative z-10">
+        <header className="text-center mb-12 space-y-4">
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <FileText className="h-12 w-12 text-primary" />
+            <h1 className="text-4xl md:text-5xl font-bold text-primary">
+              Masaka Youth Football Team
+            </h1>
           </div>
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            Official Player Contract & Rules Agreement Generator
+          </p>
+          <div className="h-1 w-24 bg-accent mx-auto rounded-full" />
+        </header>
 
-          {/* Preview Section */}
-          <div className="lg:sticky lg:top-8">
-            <div className="bg-card p-6 rounded-lg border border-border">
-              <h2 className="text-xl font-bold text-foreground mb-6 text-center">
-                Resume Preview
-              </h2>
-              <div className="overflow-auto max-h-[800px]">
-                <ResumePreview ref={resumeRef} data={resumeData} />
+        <main>
+          {isGenerating ? (
+            <div className="flex items-center justify-center py-20">
+              <div className="text-center space-y-4">
+                <div className="animate-spin h-16 w-16 border-4 border-primary border-t-transparent rounded-full mx-auto" />
+                <p className="text-lg text-muted-foreground">Generating your contract PDF...</p>
               </div>
             </div>
-          </div>
-        </div>
+          ) : (
+            <ContractForm onGeneratePDF={handleGeneratePDF} />
+          )}
+        </main>
+
+        <footer className="mt-12 text-center text-sm text-muted-foreground border-t border-border pt-6">
+          <p>© 2024 Masaka Youth Football Team. All rights reserved.</p>
+          <p className="mt-2">
+            This contract is legally binding. Please read all terms carefully before signing.
+          </p>
+        </footer>
       </div>
     </div>
   );
